@@ -1,5 +1,6 @@
 import numpy
 import matplotlib.pyplot as plot
+
 def scatter(samples, labels):
     class0Mask = labels == 0
     class1Mask = labels == 1
