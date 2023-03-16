@@ -3,14 +3,25 @@ import array
 import numpy
 
 def toCol(theArray:numpy.array):
-    return theArray.reshape(theArray.size, 1)
+    try:
+        return theArray.reshape(theArray.size, 1)
+    except Exception as e:
+        print(e)
 
 def mean(samples: numpy.array):
-    return samples.mean(1).reshape(samples.shape[0], 1)
+    try:
+        return samples.mean(1).reshape(samples.shape[0], 1)
+    except Exception as e:
+        print(e)
+
 
 def centerSampels (samples: numpy.array):
-    mean = samples.mean(1).reshape(samples.shape[0], 1)
-    return samples - mean
+    try:
+        mean = samples.mean(1).reshape(samples.shape[0], 1)
+        return samples - mean
+
+    except Exception as e:
+        print(e)
 
 
 def kfold(samples: numpy.array, foldNumber: int, folds: int = 4):
@@ -23,10 +34,10 @@ def kfold(samples: numpy.array, foldNumber: int, folds: int = 4):
 
         allrRangesIndex = set(range(sampleSize))
         testIndex = set(range(startIndex, endIndex))
-        trainIndex = list(allrRangesIndex - testIndex)
+        trainIndex = allrRangesIndex - testIndex
 
         getTestChunk = samples[:, list(testIndex)]
-        getTrainChunk = samples[:, trainIndex]
+        getTrainChunk = samples[:, list(trainIndex)]
 
         return getTrainChunk, getTestChunk
 
