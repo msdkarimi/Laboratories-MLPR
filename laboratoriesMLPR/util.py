@@ -23,6 +23,13 @@ def centerSampels (samples: numpy.array):
     except Exception as e:
         print(e)
 
+def covarinceMartix( sampels:numpy.array )-> numpy.array:
+    try:
+        return   numpy.dot(centerSampels(sampels), centerSampels(sampels).T)/ sampels.shape[1]
+
+    except Exception as e:
+        print(e)
+
 
 def kfold(samples: numpy.array, foldNumber: int, folds: int = 4):
     try:
@@ -45,3 +52,22 @@ def kfold(samples: numpy.array, foldNumber: int, folds: int = 4):
 
         print(e)
 
+
+def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)-> tuple  :
+
+    try:
+        U, s, _ = numpy.linalg.svd(covarianceMatrix)
+        P = U[:, 0:m]
+        mapped = numpy.dot(P.T, samples)
+        return mapped, P
+
+    except Exception as e:
+        print(e)
+
+def LDA():
+
+    try:
+        pass
+
+    except Exception as e:
+        print(e)
