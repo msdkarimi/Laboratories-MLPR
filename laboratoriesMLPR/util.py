@@ -53,7 +53,7 @@ def kfold(samples: numpy.array, foldNumber: int, folds: int = 4):
         print(e)
 
 
-def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)-> tuple  :
+def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)->tuple:
 
     try:
         U, s, _ = numpy.linalg.svd(covarianceMatrix)
