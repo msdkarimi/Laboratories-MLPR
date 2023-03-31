@@ -6,26 +6,25 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     try:
         data = load.Load("Data/iris.csv")
-        # plot.histopram(data.samples, data.labels)
-        # plot.scatter(data.samples, data.labels)
-        # pca4 = numpy.load("laboratories result/IRIS_PCA_matrix_m4.npy")
 
-        # mapped, P = util.PCA(data.samples, util.covarinceMartix(data.samples), 4)
-        # tst = numpy.dot(P, mapped)
-        # print(tst[:,149]-data.samples[:,149])
+        XND = numpy.load("laboratories result/lab4 solution/X1D.npy")
 
-        lda2 = numpy.load("laboratories result/IRIS_LDA_matrix_m2.npy")
-        print(lda2)
-        d, r= util.LDA(data.samples, data.labels)
-        print(r)
+        mu = util.mean(XND)
+        C = util.covarinceMartix(XND)
 
+        # mu = numpy.ones((1, 1)) * 1.0
+        # C = numpy.ones((1, 1)) * 2.0
 
+        ll = util.logpdf_GAU_ND(XND, mu, C)
 
+        plt.figure()
+        plt.hist(XND.ravel(), bins=100, density=True)
+        XPlot = numpy.linspace(-8, 12, 1000)
+        plt.plot(XPlot.ravel(), numpy.exp(util.logpdf_GAU_ND(util.toRow(XPlot), mu, C)))
+        plt.show()
 
-
-
+        print(sum(ll))
 
 
     except Exception as e:
-
         print(f"exception in main->>> {e}")

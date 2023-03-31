@@ -9,6 +9,12 @@ def toCol(theArray:numpy.array):
     except Exception as e:
         print(e)
 
+def toRow(theArray:numpy.array):
+    try:
+        return theArray.reshape(1,theArray.size)
+    except Exception as e:
+        print(e)
+
 def mean(samples: numpy.array):
     try:
         return samples.mean(1).reshape(samples.shape[0], 1)
@@ -60,7 +66,7 @@ def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)->tuple:
         U, s, _ = numpy.linalg.svd(covarianceMatrix)
         P = U[:, 0:m]
         mapped = numpy.dot(P.T, samples)
-        return mapped, P
+        return mapped
 
     except Exception as e:
         print(e)
@@ -69,7 +75,7 @@ def LDA(samples: numpy.array, labels: numpy.array, m: int = 2):
 
     try:
         sW, sB = getSW_SB(samples, labels)
-        s, U = scipy.linalg.eigh(sB, sW)
+        _, U = scipy.linalg.eigh(sB, sW)
         W = U[:, ::-1][:, 0:m]
 
         mapped = numpy.dot(W.T, samples)
@@ -104,5 +110,28 @@ def getSW_SB(dataSet, labels):
         sB = sB / dataSet.shape[1]
 
         return sW, sB
+    except Exception as e:
+        print(e)
+
+
+
+def logpdf_GAU_ND(X, mu, C):
+    try:
+        y = [ logpdfOneSample(X[:,i:i+1], mu, C) for i in range(X.shape[1])]
+        return numpy.array(y).ravel()
+
+    except Exception as e:
+        print(e)
+
+def logpdfOneSample(x, mu, C):
+    try:
+        xc = x - mu
+        M = x.shape[0]
+        constant = -0.5 * M * numpy.log(2*numpy.pi)
+        logdet = numpy.linalg.slogdet(C)[1]
+        L = numpy.linalg.inv(C)
+        vector = numpy.dot(xc.T, numpy.dot(L,xc))
+        return constant - 0.5 * logdet - 0.5 * vector
+
     except Exception as e:
         print(e)
