@@ -128,10 +128,11 @@ def logpdfOneSample(x, mu, C):
         xc = x - mu
         M = x.shape[0]
         constant = -0.5 * M * numpy.log(2*numpy.pi)
-        logdet = numpy.linalg.slogdet(C)[1]
-        L = numpy.linalg.inv(C)
-        vector = numpy.dot(xc.T, numpy.dot(L,xc))
-        return constant - 0.5 * logdet - 0.5 * vector
+        logDetSigma = numpy.linalg.slogdet(C)[1]
+        invSigma = numpy.linalg.inv(C)
+        vector = numpy.dot(xc.T, numpy.dot(invSigma,xc))
+        print(vector.shape)
+        return constant - 0.5 * logDetSigma - 0.5 * vector
 
     except Exception as e:
         print(e)
