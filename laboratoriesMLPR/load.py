@@ -5,6 +5,7 @@ class Load :
     def __init__(self, address):
         self.address = address
         self.samples, self.labels = self.extractData()
+        self.prior = 0.1
 
 
     def extractData(self):

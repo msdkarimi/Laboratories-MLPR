@@ -38,26 +38,33 @@ def covarinceMartix( sampels:numpy.array )-> numpy.array:
         print(e)
 
 
-def kfold(samples: numpy.array, foldNumber: int, folds: int = 4):
-    try:
-        sampleSize = samples.shape[1]
-        eachBin = sampleSize // folds
+def kfold(samples: numpy.array, labels, foldNumber: int, folds: int = 4, seed = 0):
+    numpy.random.seed(seed)
+    sampleSize = samples.shape[1]
+    idx = numpy.random.permutation(sampleSize)
 
-        startIndex = foldNumber * eachBin
-        endIndex = startIndex + eachBin
+    eachBin = sampleSize // folds
+    startIndex = foldNumber * eachBin
+    endIndex = startIndex + eachBin
 
-        allrRangesIndex = set(range(sampleSize))
-        testIndex = set(range(startIndex, endIndex))
-        trainIndex = allrRangesIndex - testIndex
+    if foldNumber == (folds-1):
+        endIndex = sampleSize
 
-        getTestChunk = samples[:, list(testIndex)]
-        getTrainChunk = samples[:, list(trainIndex)]
+    idxTest = idx[startIndex:endIndex]
+    idxTrain = numpy.random.permutation(list(set(idx) - set(idxTest)))
 
-        return getTrainChunk, getTestChunk
+    DTR = samples[:, idxTrain]
+    DTE = samples[:, idxTest]
+    LTR = labels[idxTrain]
+    LTE = labels[idxTest]
+    return (DTR, LTR), (DTE, LTE)
 
-    except Exception as e:
 
-        print(e)
+
+
+
+
+
 
 
 def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)->tuple:
@@ -131,8 +138,61 @@ def logpdfOneSample(x, mu, C):
         logDetSigma = numpy.linalg.slogdet(C)[1]
         invSigma = numpy.linalg.inv(C)
         vector = numpy.dot(xc.T, numpy.dot(invSigma,xc))
-        print(vector.shape)
         return constant - 0.5 * logDetSigma - 0.5 * vector
+
+    except Exception as e:
+        print(e)
+
+def split_db_2to1(D, L, seed=0):
+    nTrain = int(D.shape[1]*2.0/3.0)
+    numpy.random.seed(seed)
+    idx = numpy.random.permutation(D.shape[1])
+    idxTrain = idx[0:nTrain]
+    idxTest = idx[nTrain:]
+    DTR = D[:, idxTrain]
+    DTE = D[:, idxTest]
+    LTR = L[idxTrain]
+    LTE = L[idxTest]
+    return (DTR, LTR), (DTE, LTE)
+
+def model_MVG(trainData, trainLabel, testData, testLabel , prior, model = "G"):
+    try:
+        means = {}
+        sigmas = {}
+
+        for i in range(len(set(trainLabel))):
+            theClassOfLabel = trainData [:, trainLabel == i]
+            mu = mean(theClassOfLabel)
+            sigma = covarinceMartix(theClassOfLabel)
+            # if model == "N":
+            #     I = numpy.eye(trainData.shape[0], trainData.shape[0])
+            #     sigma = sigma *  I
+
+            means[i] = mu
+            sigmas[i] = sigma
+
+        logSJoint = numpy.zeros(( len(set(testLabel)) ,testData.shape[1]))
+        for i in range(len(set(testLabel))):
+            muML = means[i]
+            sigmaML = sigmas[i]
+            scores = logpdf_GAU_ND(testData, muML, sigmaML) + numpy.log(prior)
+            logSJoint[i,:] =  scores
+
+        SMarginal = scipy.special.logsumexp(logSJoint, 0)
+        logPostorior = logSJoint - SMarginal
+
+        predictedLabels = logPostorior.argmax(0)
+
+        return predictedLabels
+
+    except Exception as e:
+        print(e)
+
+def accuracyError(testLabels, predeictedLabels):
+    try:
+        totalNumber = testLabels.shape[0]
+        trueAssignment = sum(testLabels == predeictedLabels)
+        return (trueAssignment/totalNumber) * 100, ( 1-(trueAssignment/totalNumber)) * 100
 
     except Exception as e:
         print(e)

@@ -4,19 +4,33 @@ import plot
 import util
 import matplotlib.pyplot as plt
 if __name__ == '__main__':
-    try:
-        data = load.Load("Data/iris.csv")
+
+    data = load.Load("Data/iris.csv")
+    data.prior = 1/3
+    logSJoint_MVG = numpy.load("laboratories result/lab5 solution/g/logSJoint_MVG.npy")
+    logPosterior_MVG = numpy.load("laboratories result/lab5 solution/g/logPosterior_MVG.npy")
+    logMarginal_MVG = numpy.load("laboratories result/lab5 solution/g/logMarginal_MVG.npy")
+
+    # trainSet, testSet = util.split_db_2to1(data.samples, data.labels)
+    #
+    # peredictions = util.model_MVG(*trainSet, *testSet, data.prior, model= "N")
+    # _, testLabels = testSet
+    # acc, err = util.accuracyError(testLabels, peredictions)
+
+    k = 3
+    predictedLabels = []
+    originalLabels = []
+
+    for i in range(k):
+        trainSet, testSet = util.kfold(data.samples, data.labels, i, k)
+        d, l = trainSet
+        _, labels = testSet
+        peredictions = util.model_MVG(*trainSet, *testSet, data.prior, model="G")
+        predictedLabels.append(peredictions)
+        originalLabels.append(labels)
 
 
-        plt.figure()
-        XPlot = numpy.linspace(-8, 12, 1000)
-        m = numpy.ones((1, 1)) * 1.0
-        C = numpy.ones((1, 1)) * 2.0
-        plt.plot(XPlot.ravel(), numpy.exp(util.logpdf_GAU_ND(util.toRow(XPlot), m, C)))
-        plt.show()
 
-
-
-
-    except Exception as e:
-        print(f"exception in main->>> {e}")
+    originalLabels = numpy.hstack(originalLabels)
+    predictedLabels = numpy.hstack(predictedLabels)
+    print(1-(sum(originalLabels ==predictedLabels )/150))
