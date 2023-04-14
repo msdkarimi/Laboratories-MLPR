@@ -39,32 +39,8 @@ def covarinceMartix( sampels:numpy.array )-> numpy.array:
 
 
 def kfold(samples: numpy.array, labels, foldNumber: int, folds: int = 4, seed = 0):
-    numpy.random.seed(seed)
-    sampleSize = samples.shape[1]
-    idx = numpy.random.permutation(sampleSize)
 
-    eachBin = sampleSize // folds
-    startIndex = foldNumber * eachBin
-    endIndex = startIndex + eachBin
-
-    if foldNumber == (folds-1):
-        endIndex = sampleSize
-
-    idxTest = idx[startIndex:endIndex]
-    idxTrain = numpy.random.permutation(list(set(idx) - set(idxTest)))
-
-    DTR = samples[:, idxTrain]
-    DTE = samples[:, idxTest]
-    LTR = labels[idxTrain]
-    LTE = labels[idxTest]
-    return (DTR, LTR), (DTE, LTE)
-
-
-
-
-
-
-
+    pass
 
 
 def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)->tuple:
@@ -183,7 +159,7 @@ def model_MVG(trainData, trainLabel, testData, testLabel , prior, model = "G"):
 
         predictedLabels = logPostorior.argmax(0)
 
-        return predictedLabels
+        return logPostorior
 
     except Exception as e:
         print(e)
