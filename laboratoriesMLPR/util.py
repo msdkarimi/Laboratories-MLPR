@@ -198,3 +198,30 @@ def accuracyError(testLabels, predeictedLabels):
 
     except Exception as e:
         print(e)
+
+class MyKFold:
+    def __init__(self, n_splits = 3, seed = 0):
+        self.numberOfFolds = n_splits
+        self.seed = seed
+
+    def kfSplite(self, Xdataset, Ydataset):
+        pairOfTrainTest = list()
+        numpy.random.seed(self.seed)
+        indices = numpy.random.permutation(Xdataset.shape[1])
+        folds = numpy.array_split(indices, self.numberOfFolds)
+
+        for fold in range(self.numberOfFolds):
+            test_indices = folds[fold]
+            train_indices = numpy.concatenate(folds[:fold] + folds[fold + 1:])
+
+            Xtrain = Xdataset[:, train_indices]
+            Ytrain = Ydataset[train_indices]
+
+            Xtest = Xdataset[:, test_indices]
+            Ytest = Ydataset[test_indices]
+
+
+            pairOfTrainTest.append(((Xtrain, Ytrain),(Xtest, Ytest)))
+
+        self.allFolds = pairOfTrainTest
+
