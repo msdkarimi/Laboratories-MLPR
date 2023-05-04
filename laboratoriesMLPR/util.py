@@ -38,10 +38,24 @@ def covarinceMartix( sampels:numpy.array )-> numpy.array:
         print(e)
 
 
-def kfold(samples: numpy.array, labels, foldNumber: int, folds: int = 4, seed = 0):
+def kfold(samples: numpy.array, labels, foldNumber: int, folds: int = 3, seed = 0):
+    # maskOfEachClass = dict()
+    # for classLabel in range(len(set(labels))):
+    #     maskOfGivenClass = numpy.where (labels == classLabel)
+    #     maskOfEachClass[classLabel] = samples[:, maskOfGivenClass[0]]
+    numpy.random.seed(seed)
+    idx = numpy.random.permutation(samples.shape[1])
 
-    pass
+    testDataIndex = [foldNumber]
+    trainDataIndx = list(set(idx) - set(testDataIndex))
 
+    testData = samples[:, testDataIndex]
+    testLabel = labels[testDataIndex]
+
+    trainData = samples[:, trainDataIndx]
+    trainLabel = labels[trainDataIndx]
+
+    return (trainData, trainLabel), (testData, testLabel)
 
 def PCA(samples: numpy.array, covarianceMatrix: numpy.array, m: int = 4)->tuple:
 
@@ -135,31 +149,43 @@ def model_MVG(trainData, trainLabel, testData, testLabel , prior, model = "G"):
     try:
         means = {}
         sigmas = {}
+        tiedSigma = 0
 
         for i in range(len(set(trainLabel))):
             theClassOfLabel = trainData [:, trainLabel == i]
             mu = mean(theClassOfLabel)
             sigma = covarinceMartix(theClassOfLabel)
-            # if model == "N":
-            #     I = numpy.eye(trainData.shape[0], trainData.shape[0])
-            #     sigma = sigma *  I
-
+            if model == "N":
+                I = numpy.eye(trainData.shape[0], trainData.shape[0])
+                sigma = sigma *  I
             means[i] = mu
             sigmas[i] = sigma
+
+        if model == "T":
+            for i in range(len(set(trainLabel))):
+                theSigma = sigmas[i]
+                givenClassSize = trainData[:, trainLabel == i].shape[1]
+                tiedSigma += (givenClassSize * theSigma)
+
+            tiedSigma /= trainData.shape[1]
+
+
 
         logSJoint = numpy.zeros(( len(set(testLabel)) ,testData.shape[1]))
         for i in range(len(set(testLabel))):
             muML = means[i]
-            sigmaML = sigmas[i]
+            if model != "T":
+                sigmaML = sigmas[i]
+            else:
+                sigmaML = tiedSigma
             scores = logpdf_GAU_ND(testData, muML, sigmaML) + numpy.log(prior)
             logSJoint[i,:] =  scores
 
         SMarginal = scipy.special.logsumexp(logSJoint, 0)
         logPostorior = logSJoint - SMarginal
 
-        predictedLabels = logPostorior.argmax(0)
-
-        return logPostorior
+        # predictedLabels = logPostorior.argmax(0)
+        return logPostorior, SMarginal, logSJoint
 
     except Exception as e:
         print(e)
