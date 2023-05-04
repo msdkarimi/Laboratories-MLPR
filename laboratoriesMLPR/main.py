@@ -8,9 +8,24 @@ if __name__ == '__main__':
 
     data = load.Load("Data/iris.csv")
 
-    kf = MyKFold(n_splits=150)
+    kf = MyKFold(n_splits=4)
     kf.kfSplite(data.samples, data.labels)
     kf.allFolds[0]
+
+    predictions = list()
+    GT = list()
+    for train, test in kf.allFolds:
+        t,l = test
+        GT.append(l)
+        logPostorior, SMarginal, logSJoint = util.model_MVG(*train, *test, data.prior, model="G")
+        predictions.append(logPostorior.argmax(axis=0))
+
+    print(numpy.hstack(predictions))
+    print(numpy.hstack(GT))
+    print( sum(numpy.hstack(GT) == numpy.hstack(predictions)))
+
+
+
 
 
 
