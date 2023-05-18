@@ -1,4 +1,5 @@
 import array
+import math
 
 import numpy
 import scipy
@@ -200,7 +201,7 @@ def accuracyError(testLabels, predeictedLabels):
         print(e)
 
 class MyKFold:
-    def __init__(self, n_splits = 3, seed = 0):
+    def __init__(self,n_splits = 3, seed = 0):
         self.numberOfFolds = n_splits
         self.seed = seed
 
@@ -225,3 +226,94 @@ class MyKFold:
 
         self.allFolds = pairOfTrainTest
 
+
+def load_iris_binary(D, L):
+    D = D[:, L != 0] # We remove setosa from D
+    L = L[L!=0] # We remove setosa from L
+    L[L==2] = 0 # We assign label 0 to virginica (was label 2)
+    return D, L
+
+
+def logReg_obj_wrap_prior_weighted(trainData, trainLabel, priorTarget, lambdaa):
+    features = trainData.shape[0]
+    Z = trainLabel * 2.0 - 1.0
+
+    class0_size = len(trainLabel[trainLabel == 0])
+    class1_size = len(trainLabel[trainLabel == 1])
+
+    class0_z = Z[trainLabel == 0]
+    class1_z = Z[trainLabel == 1]
+
+    def logReg(V):
+        w = toCol(V[0:features])
+        b = V[-1]
+
+        class0_scores = numpy.dot(w.T, trainData[:, trainLabel == 0]) + b
+        class1_scores = numpy.dot(w.T, trainData[:, trainLabel == 1]) + b
+
+        class0_prior_Weight_loss = ((1-priorTarget)/class0_size) * numpy.logaddexp(0, -class0_z * class0_scores).sum()
+        class1_prior_Weight_loss = ((priorTarget)/class1_size) * numpy.logaddexp(0, -class1_z * class1_scores).sum()
+        regulizer = 0.5 * lambdaa * numpy.linalg.norm(w)**2
+
+        return regulizer + class1_prior_Weight_loss + class0_prior_Weight_loss
+    return logReg
+
+
+def train_logReg_prior_weighted(trainData, trainLabel, testData, priorTarget = 0.5, lambdaa=0.001):
+    logReg_obj = logReg_obj_wrap_prior_weighted(trainData, trainLabel, priorTarget, lambdaa)
+    x0 = numpy.zeros(trainData.shape[0]+1)
+    V, _, _ = scipy.optimize.fmin_l_bfgs_b(logReg_obj, x0=x0, approx_grad=True)
+    w, b = toCol(V[0:trainData.shape[0]]), V[-1]
+    scores = numpy.dot(w.T, testData) + b
+    predictedLabels = (scores.ravel() > 0) * 1
+    return scores, predictedLabels
+
+def logReg_obj_wrap(trainData, trainLabel, lambdaa):
+    features = trainData.shape[0]
+    Z = trainLabel * 2.0 - 1.0
+    def logReg(V):
+        w = toCol(V[0:features])
+        b = V[-1]
+        scores = numpy.dot(w.T, trainData) + b
+        loss_sample = numpy.logaddexp(0, -Z * scores)
+        loss = loss_sample.mean() + 0.5 * lambdaa * numpy.linalg.norm(w)**2
+        return loss
+    return logReg
+
+def train_logReg(trainData, trainLabel, lambdaa):
+    logReg_obj = logReg_obj_wrap(trainData, trainLabel, lambdaa)
+    x0 = numpy.zeros(trainData.shape[0]+1)
+    V, _, _ = scipy.optimize.fmin_l_bfgs_b(logReg_obj, x0=x0, approx_grad=True)
+    return toCol(V[0:trainData.shape[0]]), V[-1]
+
+
+def confusion_matrix(ground_truth_labels, predicted_labels):
+    cm = numpy.zeros((len(set(ground_truth_labels)), len(set(ground_truth_labels))))
+
+    mask_GT = ground_truth_labels == 0
+    predicted = predicted_labels[mask_GT]
+    ground_truth = ground_truth_labels[mask_GT]
+    tN = sum(predicted == ground_truth)
+    fP = sum (ground_truth_labels == 0) - tN
+
+    mask_GT = ground_truth_labels == 1
+    predicted = predicted_labels[mask_GT]
+    ground_truth = ground_truth_labels[mask_GT]
+    tP = sum(predicted == ground_truth)
+    fN = sum(ground_truth_labels == 1) - tP
+
+    cm[0][0] = tN
+    cm[0][1] = fP
+    cm[1][0] = fN
+    cm[1][1] = tP
+    tpR = tP/(fN + tP)
+    fpR = fP/(fP+tN)
+    fnR = 1 - tpR
+    tnR = 1 - fpR
+    return cm, tpR, fpR, fnR, tnR
+
+def empirical_bayes_risk(fnR, fpR, fnC, fpC, targetPrior):
+    return (targetPrior * fnC * fnR) + ( (1-targetPrior)* fpC * fpR)
+
+def normal_dcf(fnR, fpR, fnC, fpC, targetPrior = 0.5):
+    return empirical_bayes_risk(fnR, fpR, fnC, fpC, targetPrior)/ min(targetPrior*fnC, (1-targetPrior)*fpC)

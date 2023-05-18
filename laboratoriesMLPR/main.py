@@ -8,37 +8,28 @@ if __name__ == '__main__':
 
     data = load.Load("Data/iris.csv")
 
-    kf = MyKFold(n_splits=4)
-    kf.kfSplite(data.samples, data.labels)
-    kf.allFolds[0]
+    d, l = util.load_iris_binary(data.samples, data.labels)
+    (t, tl), (te, tel) = util.split_db_2to1(d,l)
 
-    predictions = list()
-    GT = list()
-    for train, test in kf.allFolds:
-        t,l = test
-        GT.append(l)
-        logPostorior, SMarginal, logSJoint = util.model_MVG(*train, *test, data.prior, model="G")
-        predictions.append(logPostorior.argmax(axis=0))
+    targetPrior = 0.5
+    fpC = 1
+    fnC = 1
 
-    print(numpy.hstack(predictions))
-    print(numpy.hstack(GT))
-    print( sum(numpy.hstack(GT) == numpy.hstack(predictions)))
+    pi_tilde = (targetPrior * fnC) / (targetPrior * fnC + ((1 - targetPrior) * fpC))
 
+    scores, pLabels = util.train_logReg_prior_weighted(t, tl, te, priorTarget= targetPrior, lambdaa=0.001)
 
+    log_odds =  numpy.log(targetPrior/(1-targetPrior))
+    llr = scores - log_odds
 
+    predicted_ = llr.ravel() > numpy.log(pi_tilde / (1 - pi_tilde))
 
+    err = 100 - (sum(tel == predicted_) / te.shape[1]) * 100
+    print(err)
 
+    cm, tpR, fpR, fnR, tnR = util.confusion_matrix(tel, predicted_)
+    print(cm)
+    print(f"tpR= {tpR}, tnR = {tnR}, fpR= {fpR}, fnR= {fnR}")
+    dcf = util.normal_dcf(fnR, fpR, fnC, fpC, targetPrior)
+    print(dcf)
 
-    # data.prior = 1/3
-    # logSJoint_T = numpy.load("laboratories result/lab5 solution/tied/logSJoint_TiedMVG.npy")
-    # logPosterior_T = numpy.load("laboratories result/lab5 solution/tied/logPosterior_TiedMVG.npy")
-    # logMarginal_T = numpy.load("laboratories result/lab5 solution/tied/logMarginal_TiedMVG.npy")
-    # predictedGT = logPosterior_T.argmax(axis=0)
-    #
-    # trainSet, testSet = util.split_db_2to1(data.samples, data.labels)
-    # logPostorior, SMarginal, logSJoint = util.model_MVG(*trainSet, *testSet, data.prior, model="T")
-    # predicted = logPostorior.argmax(axis=0)
-    # print(logPosterior_T[1])
-    # print("-----------------------------------------------------------------------------------------------------")
-    # print(logPostorior[1])
-    # print(sum(predicted==predictedGT))
